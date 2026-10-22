@@ -141,5 +141,16 @@ h1{font-size:46px;line-height:1.15;letter-spacing:-.025em;margin-bottom:15px}
  .research-project-group .project h5,.goal-card h4,.method-card h4{font-size:16px}
 }
 
+/* Keep the portrait aligned with the name at the top right */
+.intro{display:grid;grid-template-columns:minmax(0,1fr) 165px;column-gap:42px;align-items:start;max-width:1080px}
+.intro>div{grid-column:1;grid-row:1;min-width:0}
+.intro .portrait{grid-column:2;grid-row:1;justify-self:end;align-self:start;width:165px;max-height:220px;margin:4px 0 0}
+.intro.no-portrait{display:block}
+@media(max-width:720px){
+ .intro{display:grid;grid-template-columns:minmax(0,1fr) 108px;column-gap:18px;align-items:start}
+ .intro .portrait{grid-column:2;grid-row:1;width:108px;max-height:145px;margin:3px 0 0}
+ .intro.no-portrait{display:block}
+}
+
 .nav nav a[aria-current="page"]{font-weight:700;color:#173e60}.event-section{margin-top:18px}.event-section>h2{font-size:21px;border-left:0;padding-left:0;margin:24px 0 12px}.section>h1{font-size:28px;color:#203e58}.header .brand{font-weight:600}@media(max-width:720px){.nav nav a{padding:0 4px;font-size:12px}.nav nav{flex-wrap:wrap;justify-content:flex-start;gap:8px 0}}
 </style></head><body><header class="header"><div class="wrap nav"><a class="brand" href="index.html">Peng-Hu Du</a><nav aria-label="Main navigation"><a href="index.html" >Home</a><a href="research.html" >Research</a><a href="publications.html" >Publications</a><a href="events.html" aria-current="page">Events</a><a href="contact.html" >Contact</a></nav></div></header><main class="wrap"><section class="section" id="events"><h2>Events</h2><div class="event-section"><h2>Honors & Awards</h2><ul class="recognition"><li><time>2024</time><span>Peking University President’s Scholarship<small class="activity-type">Scholarship</small></span></li><li><time>2024</time><span>Best Oral Presentation Award at the Peking University “Boya M-Talents” International Doctoral Students Academic Forum<small class="activity-type">Award</small></span></li><li><time>2023, 2021</time><span>Award for Scientific Research of Peking University<small class="activity-type">Award</small></span></li><li><time>2022</time><span>Award for Academic Excellence of Peking University<small class="activity-type">Award</small></span></li></ul></div><div class="event-section"><h2>Talks & Posters</h2><ul class="recognition"><li><time>2025</time><span>Oral Presentation at the 8th International Symposium on Energy Materials Chemistry<small class="activity-type">Oral presentation</small></span></li><li><time>2024</time><span>Poster Presentation at the AI for Science Forum<small class="activity-type">Poster presentation</small></span></li></ul></div></section><footer class="footer"><span>Peng-Hu Du &middot; Computational materials physics</span><span>Updated 2026-10-22</span></footer></main></body></html>
