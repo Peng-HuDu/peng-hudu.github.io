@@ -159,7 +159,7 @@ export function publicationAuthorsHTML(authors=''){
 export function publicationCitationHTML(pub){
   return '<strong><em>'+escapeHTML(pub.journal)+'</em></strong>'+
     (pub.volume?' '+escapeHTML(pub.volume):'')+
-    (pub.pages?', '+escapeHTML(pub.pages):'')+' ('+escapeHTML(pub.year)+').';
+    (pub.pages?', '+escapeHTML(String(pub.pages).trim().split(/\s*(?:[-–—−]|&ndash;|&mdash;)\s*(?=\d)/)[0]):'')+' ('+escapeHTML(pub.year)+').';
 }
 
 export function cvBody(p) {
