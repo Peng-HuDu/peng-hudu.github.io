@@ -148,6 +148,20 @@ export function profileDefinitions() {
     ['institution','Institutional profile','University record']
   ];
 }
+
+/** Shared publication typography; display-only, source author names remain unchanged. */
+export function publicationAuthorsHTML(authors=''){
+  return String(authors).split(/,\s*/).map(name=>{
+    const identity=name.replace(/[^A-Za-z]/g,'').toLowerCase();
+    return ['penghudu','phdu'].includes(identity)?'<u class="publication-owner">Peng-Hu Du</u>':escapeHTML(name.trim());
+  }).join(', ');
+}
+export function publicationCitationHTML(pub){
+  return '<strong><em>'+escapeHTML(pub.journal)+'</em></strong>'+
+    (pub.volume?' <strong>'+escapeHTML(pub.volume)+'</strong>':'')+
+    (pub.pages?', '+escapeHTML(pub.pages):'')+' ('+escapeHTML(pub.year)+').';
+}
+
 export function cvBody(p) {
   p=chronologicalProfile(withOptionalSections(p));
   const h = escapeHTML;
@@ -164,7 +178,7 @@ export function cvBody(p) {
   ${(p.projects||[]).length?`<h2>Representative research</h2>${p.projects.map(x=>`<div class="cv-entry"><p>${h(x.description)}</p></div>`).join('')}`:''}
   ${(p.honors||[]).length?`<h2>Honors, awards &amp; presentations</h2>${p.honors.map(x=>`<div class="cv-entry"><p><strong>${h(x.year)}</strong> &middot; ${h(x.title)}</p></div>`).join('')}`:''}
   ${p.goals.length?`<h2>Planned research directions</h2>${p.goals.map(x=>`<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.description)}</p></div>`).join('')}`:''}
-  <h2>Publications</h2>${p.publications.length?`<ol>${sortedPublications(p).map(x=>`<li>${h(x.authors)} (${h(x.year)}). <strong>${h(x.title)}</strong>. <em>${h(x.journal)}</em>${x.volume?' '+h(x.volume):''}${x.pages?', '+h(x.pages):''}.${!!x.status && x.status!=='published'?` [${h(x.status)}]`:''}${x.doi?` <a href="https://doi.org/${h(normalizedDOI(x.doi))}">${h(normalizedDOI(x.doi))}</a>`:''}</li>`).join('')}</ol>`:(safeURL(p.links.scholar)?`<p>Publication record and current citation metrics: <a href="${h(safeURL(p.links.scholar))}" target="_blank" rel="noopener noreferrer">Google Scholar</a>.</p>${p.draft?'<p class="cv-muted">Individual publication records have not yet been imported into this CV.</p>':''}`:'<p class="cv-muted">Individual publication records have not yet been added.</p>')}
+  <h2>Publications</h2>${p.publications.length?`<ol>${sortedPublications(p).map(x=>`<li>${publicationAuthorsHTML(x.authors)}. <strong>${h(x.title)}</strong>. ${publicationCitationHTML(x)}${!!x.status && x.status!=='published'?` [${h(x.status)}]`:''}${x.doi?` <a href="https://doi.org/${h(normalizedDOI(x.doi))}">${h(normalizedDOI(x.doi))}</a>`:''}</li>`).join('')}</ol>`:(safeURL(p.links.scholar)?`<p>Publication record and current citation metrics: <a href="${h(safeURL(p.links.scholar))}" target="_blank" rel="noopener noreferrer">Google Scholar</a>.</p>${p.draft?'<p class="cv-muted">Individual publication records have not yet been imported into this CV.</p>':''}`:'<p class="cv-muted">Individual publication records have not yet been added.</p>')}
   ${p.publicationSummary.showCount && p.publicationSummary.reportedCount!==null?`<p class="cv-muted">Reported total: ${h(p.publicationSummary.reportedCount)} papers; as of ${h(p.publicationSummary.countAsOf)}. ${h(p.publicationSummary.countSource)}</p>`:''}
   <p class="cv-muted">Last content update: ${h(p.updated)}.</p></article>`;
 }
