@@ -74,5 +74,31 @@ h1{font-size:46px;line-height:1.15;letter-spacing:-.025em;margin-bottom:15px}
 .history-item p{font-size:16px;line-height:1.65}
 @media(max-width:720px){.history-item{grid-template-columns:minmax(105px,30%) minmax(0,1fr);column-gap:16px;padding:15px 0}.history-item strong{font-size:16px}.history-item p{font-size:15px}}
 
+/* Single-column sections with one table-like row per record */
+.section .area{display:grid;grid-template-columns:minmax(190px,27%) minmax(0,1fr);column-gap:38px;row-gap:8px;padding:20px 0;border-bottom:1px solid #e1e6eb}
+.section .area h3{grid-column:1;grid-row:1;margin:0}
+.section .area>p{grid-column:2;grid-row:1;margin:0}
+.section .area .project{grid-column:1 / -1;display:grid;grid-template-columns:minmax(190px,27%) minmax(0,1fr);column-gap:38px;padding-top:15px;margin:0;border-top:1px solid #edf0f3}
+.section .area .project h4{grid-column:1;font-size:16px;margin:0}
+.section .area .project p{grid-column:2;margin:0}
+.goal-row{display:grid;grid-template-columns:minmax(190px,27%) minmax(0,1fr);gap:8px 38px;padding:18px 0;border-bottom:1px solid #e1e6eb}
+.goal-row h3{grid-column:1;grid-row:1;margin:0}.goal-row p{grid-column:2;grid-row:1;margin:0}
+.methods>div{display:grid;grid-template-columns:minmax(190px,27%) minmax(0,1fr);gap:8px 38px;padding:14px 0;border-bottom:1px solid #e1e6eb;margin:0}
+.methods dt{grid-column:1}.methods dd{grid-column:2;margin:0}
+.pubs li{display:grid;grid-template-columns:minmax(100px,18%) minmax(0,1fr);column-gap:30px;row-gap:5px;align-items:start}
+.pubs .pub-year{grid-column:1;grid-row:1 / span 5;padding-top:3px}
+.pubs li h3,.pubs li>p,.pubs li>.links{grid-column:2}
+.pubs li h3{margin:0}.pubs li>p{margin:0}.pubs li>.links{margin:4px 0 0}
+.contact-record{display:grid;grid-template-columns:minmax(160px,22%) minmax(0,1fr);gap:8px 32px;padding:17px 0;border-bottom:1px solid #e1e6eb}
+.contact-label{font-weight:600;color:#304d66}.contact-value{margin:0}.contact-value.links{margin:0;gap:12px 20px}
+@media(max-width:720px){
+ .section .area,.section .area .project,.goal-row{grid-template-columns:minmax(105px,30%) minmax(0,1fr);column-gap:16px}
+ .section .area h3,.goal-row h3{font-size:16px}
+ .section .area>p,.section .area .project p,.goal-row p{font-size:15px}
+ .methods>div{grid-template-columns:minmax(105px,30%) minmax(0,1fr);column-gap:16px}
+ .pubs li{grid-template-columns:minmax(54px,16%) minmax(0,1fr);column-gap:14px}.pubs h3{font-size:17px}
+ .contact-record{grid-template-columns:minmax(100px,30%) minmax(0,1fr);column-gap:14px}
+}
+
 .nav nav a[aria-current="page"]{font-weight:700;color:#173e60}.event-section{margin-top:30px}.event-section>h2{font-size:20px}.section>h1{font-size:28px;color:#203e58}.header .brand{font-weight:600}@media(max-width:720px){.nav nav a{padding:0 4px;font-size:12px}.nav nav{flex-wrap:wrap;justify-content:flex-start;gap:8px 0}}
 </style></head><body><header class="header"><div class="wrap nav"><a class="brand" href="index.html">Peng-Hu Du</a><nav aria-label="Main navigation"><a href="index.html" >Home</a><a href="research.html" >Research</a><a href="publications.html" >Publications</a><a href="events.html" aria-current="page">Events</a><a href="contact.html" >Contact</a></nav></div></header><main class="wrap"><section class="section" id="events"><h1>Events</h1><div class="event-section"><h2>Honors & Awards</h2><ul class="recognition"><li><time>2024<span>Peking University President’s Scholarship<small class="activity-type">Scholarship</small></span></li><li><time>2024<span>Best Oral Presentation Award at the Peking University “Boya M-Talents” International Doctoral Students Academic Forum<small class="activity-type">Award</small></span></li><li><time>2023, 2021<span>Award for Scientific Research of Peking University<small class="activity-type">Award</small></span></li><li><time>2022<span>Award for Academic Excellence of Peking University<small class="activity-type">Award</small></span></li></ul></div><div class="event-section"><h2>Talks & Posters</h2><ul class="recognition"><li><time>2025<span>Oral Presentation at the 8th International Symposium on Energy Materials Chemistry<small class="activity-type">Oral presentation</small></span></li><li><time>2024<span>Poster Presentation at the AI for Science Forum<small class="activity-type">Poster presentation</small></span></li></ul></div></section><footer class="footer"><span>Peng-Hu Du &middot; Computational materials physics</span><span>Updated 2026-10-22</span></footer></main></body></html>
