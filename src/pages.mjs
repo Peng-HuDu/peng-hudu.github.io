@@ -1,10 +1,11 @@
+import {chronologicalProfile,sortEntries} from './chronology.mjs';
 import {renderHome as oldHome, groupActivities} from './layout-base.mjs';
 import {escapeHTML as h,safeURL,profileDefinitions} from './render-core.mjs';
 export const pageDefs=[['home','Home','index.html'],['research','Research','research.html'],['publications','Publications','publications.html'],['events','Events','events.html'],['contact','Contact','contact.html']];
 const eventList=(arr,title)=>{
  if(!arr.length)return '';
  const getYear=x=>Number((String(x.year).match(/[0-9]{4}/)||[])[0])||0;
- const sorted=[...arr].sort((a,b)=>getYear(b)-getYear(a)||String(b.year).localeCompare(String(a.year))||a.title.localeCompare(b.title));
+ const sorted=sortEntries(arr);
  const groups=[]; for(const item of sorted){const year=getYear(item);let group=groups.at(-1);if(!group||group.year!==year){group={year,items:[]};groups.push(group);}group.items.push(item);}
  return `<div class="event-section"><h2>${title}</h2>${groups.map(group=>`<section class="event-year"><h3>${group.year||'Other'}</h3><ul class="recognition">${group.items.map(x=>`<li><span>${h(x.title)}${x.type?`<small class="activity-type">${h(x.type)}</small>`:''}</span></li>`).join('')}</ul></section>`).join('')}</div>`;
 };
@@ -15,6 +16,7 @@ const extractSection=(html,id)=>{
  return '';
 };
 export function renderPages(profile){
+  profile=chronologicalProfile(profile);
   const full=oldHome(profile);
   const css=full.match(/<style>([\s\S]*?)<\/style>/)[1];
   const sections=Object.fromEntries(['home','research','publications','contact'].map(id=>{

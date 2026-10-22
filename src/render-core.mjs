@@ -1,3 +1,4 @@
+import {DATE_SECTIONS,parseDate,sortEntries,chronologicalProfile,homeSectionOrder} from './chronology.mjs';
 /** Pure HTML renderers shared by the offline editor and the static build. */
 export function escapeHTML(value = '') {
   return String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -99,10 +100,17 @@ export function validateProfile(p, release = false) {
     const d = p.presentation;
     if (!d || typeof d !== 'object' || ['monogram','researchIntro','perspectiveTitle'].some(k => typeof d[k] !== 'string') || !Array.isArray(d.steps) || d.steps.some(x => !x || typeof x.title !== 'string' || typeof x.description !== 'string')) errors.push('presentation needs text fields monogram, researchIntro, perspectiveTitle, and a steps array with title and description.');
   }
+  const dateLabels={experience:'职业经历',education:'教育经历',research:'研究领域',projects:'研究工作',goals:'当前研究方向',skills:'研究方法',honors:'学术活动',publications:'论文',contactLinks:'合作链接'};
+  for(const key of DATE_SECTIONS)for(const [i,item] of (Array.isArray(p[key])?p[key]:[]).entries()){
+    if(!item||item.startDate===undefined||item.startDate==='')continue;
+    if(parseDate(item.startDate)===null){errors.push(dateLabels[key]+'第'+(i+1)+'条：排序时间请填写有效的 YYYY、YYYY-MM 或 YYYY-MM-DD。');continue;}
+    const year=String(item.year??'').match(/\b\d{4}\b/)?.[0];
+    if(['publications','honors'].includes(key)&&year&&item.startDate.trim().slice(0,4)!==year)errors.push(dateLabels[key]+'第'+(i+1)+'条：排序日期的年份须与条目年份一致。');
+  }
   if (release && p.draft) errors.push('Release blocked: the profile is still a draft. Review the content and set draft to false.');
   return errors;
 }
-export function sortedPublications(p) { return [...p.publications].sort((a,b) => b.year - a.year || a.title.localeCompare(b.title)); }
+export function sortedPublications(p) { return sortEntries(p.publications); }
 export function bibtex(p) {
   const tex = value => String(value || '').replace(/\\/g, '\\textbackslash{}').replace(/[{}]/g, c => '\\'+c).replace(/[&%#_]/g, c => '\\'+c).replace(/\$/g, '\\$');
   return sortedPublications(p).map((x,i) => {
@@ -124,6 +132,7 @@ export function profileDefinitions() {
   ];
 }
 export function cvBody(p) {
+  p=chronologicalProfile(p);
   const h = escapeHTML;
   const records = key => p[key].map(x => `<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.institution)} &middot; ${h(x.period)}</p>${x.detail?`<p class="cv-muted">${h(x.detail)}</p>`:''}</div>`).join('');
   const links = profileDefinitions().filter(([key]) => safeURL(p.links[key])).map(([key,label])=>`<a href="${h(safeURL(p.links[key]))}" target="_blank" rel="noopener noreferrer">${h(label)}</a>`).join(' &middot; ');
@@ -132,7 +141,7 @@ export function cvBody(p) {
   ${p.draft?`<div class="cv-draft">DRAFT CV &mdash; Review before sharing.${p.publications.length?'':' Individual publication records have not yet been imported.'}</div>`:''}
   <div class="cv-heading"><div><h1>${h(p.name)}</h1><p>${h(p.role)} &middot; ${h(p.department)}<br>${h(p.institution)}</p>${p.email?`<p><a href="mailto:${h(p.email)}">${h(p.email)}</a></p>`:''}${links?`<p>${links}</p>`:''}</div>${image?`<img class="cv-portrait" src="${image}" alt="${h(p.portrait.alt)}" width="82" height="105">`:''}</div>
   <h2>Research profile</h2>${p.bio.map(x=>`<p>${h(x)}</p>`).join('')}
-  <h2>Appointment</h2>${records('experience')}<h2>Education</h2>${records('education')}
+  ${homeSectionOrder(p).map(key=>`<h2>${key==='experience'?'Appointment':'Education'}</h2>${records(key)}`).join('')}
   <h2>Research expertise</h2>${p.research.map(x=>`<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.description)}</p><p class="cv-muted">${h(x.label)}</p></div>`).join('')}
   ${(p.skills||[]).length?`<h2>Research skills</h2><div class="cv-skill-list">${p.skills.map(x=>`<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.tools)}</p></div>`).join('')}</div>`:''}
   ${(p.projects||[]).length?`<h2>Doctoral research projects</h2>${p.projects.map(x=>`<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.description)}</p></div>`).join('')}`:''}
@@ -146,6 +155,7 @@ export function renderCV(p, css) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="profile-revision" content="${escapeHTML(p.revision || '')}"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(p.name)} | Curriculum vitae</title>${p.draft?'<meta name="robots" content="noindex,nofollow">':''}<style>${css}</style></head><body class="cv-only"><div class="cv-actions"><span>Curriculum vitae &middot; ${escapeHTML(p.name)}</span><button onclick="window.print()">Print / Save PDF</button></div>${cvBody(p)}</body></html>`;
 }
 export function renderHome(p, css) {
+  p=chronologicalProfile(p);
   const h = escapeHTML;
   const pubs = sortedPublications(p);
   const profiles = profileDefinitions().map(([key,label,desc]) => {
@@ -197,5 +207,5 @@ export function publicProfile(input) {
   if (p.publicationSummary && !p.publicationSummary.showCount) {
     p.publicationSummary.reportedCount = null; p.publicationSummary.countAsOf = ''; p.publicationSummary.countSource = '';
   }
-  return p;
+  return chronologicalProfile(p);
 }
