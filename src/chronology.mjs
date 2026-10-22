@@ -1,5 +1,5 @@
 /** Shared chronological ordering for editor views, exports and public pages. */
-export const DATE_SECTIONS=['experience','education','research','projects','goals','skills','honors','publications','contactLinks'];
+export const DATE_SECTIONS=['experience','education','research','projects','goals','skills','honors','publications','contactLinks','affiliations','emails'];
 export function parseDate(value){
  if(typeof value!=='string')return null;
  const m=value.trim().match(/^(\d{4})(?:-(\d{2})(?:-(\d{2}))?)?$/);
