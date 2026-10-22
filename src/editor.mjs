@@ -54,7 +54,7 @@ forms();
 function check(){if(rawDirty){say('请先应用 JSON 修改。',true);return false;}const errors=validateProfile(p);if(errors.length){say('请检查以下字段：\n'+errors.join('\n'),true);return false;}return true;}
 let currentPage='index.html',activeTab='basics';
 function preview(){if(!loaded||!check())return;const pages=renderPages(p);$('preview').srcdoc=pages[currentPage];}
-function switchPreview(key){const map={basics:'index.html',research:'research.html',publications:'publications.html',events:'events.html',contact:'contact.html'};if(map[key])currentPage=map[key];$('page-preview').value=currentPage;preview();}
+function switchPreview(key){const map={basics:'index.html',research:'research.html',publications:'publications.html',events:'events.html',contact:'contact.html'};if(map[key])currentPage=map[key];preview();}
 function modified(){dirty=true;controls();clearTimeout(timer);timer=setTimeout(preview,450);say('已修改，尚未保存。');}
 function download(name,text,mime){const url=URL.createObjectURL(new Blob([text],{type:mime})),a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function controls(){
@@ -69,7 +69,7 @@ function controls(){
  for(const el of document.querySelectorAll('.toolbar button'))el.disabled=busy||!loaded;
  $('tools-state').textContent=loaded?'导出文件保存在本地':'连接资料库后可用';
  $('editor-empty').hidden=loaded;$('preview-empty').hidden=loaded;$('preview').hidden=!loaded;
- for(const el of document.querySelectorAll('[data-tab],#page-preview,#refresh'))el.disabled=busy||!loaded;
+ for(const el of document.querySelectorAll('[data-tab],#refresh'))el.disabled=busy||!loaded;
  $('connection-state').textContent=store.connected?'已连接':'未连接';
  $('connection-state').dataset.connected=String(store.connected);
  $('edit-state').textContent=busy?'处理中…':!loaded?'未载入资料':dirty?'有未保存修改':'已保存';
@@ -104,7 +104,6 @@ document.addEventListener('click',e=>{if(e.target.closest('#import-bib')){$('bib
 $('refresh').onclick=()=>{preview();if(check())say('预览已刷新，尚未发布。');};
 $('export-json').onclick=()=>{if(check()){download('profile.json',JSON.stringify(p,null,2)+'\n','application/json');say('资料 JSON 已导出，不会更改云端内容。');}};
 $('export-home').onclick=()=>{if(!check())return;const blob=zipTextFiles(renderPages(p)),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='academic_homepage_5_pages.zip';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);say('已导出五个英文 HTML 页面（ZIP 压缩包）。');};
-$('page-preview').onchange=e=>{if(rawDirty){e.target.value=currentPage;say('请先应用 JSON 修改。',true);return;}const key={'index.html':'basics','research.html':'research','publications.html':'publications','events.html':'events','contact.html':'contact'}[e.target.value];document.querySelector('[data-tab="'+key+'"]').click();};
 $('import-json-button').onclick=()=>$('import-json').click();
 $('export-cv').onclick=()=>{if(!check())return;try{exportCVPDF(p,css);say('已打开英文 CV 打印窗口。请选择“另存为 PDF”，建议关闭页眉页脚。不会上传 CV。');}catch(e){say('请允许此网站的弹出窗口，再导出 PDF。',true);}};
 document.addEventListener('change',async e=>{if(e.target.id!=='bib-file')return;const file=e.target.files[0];if(!file)return;try{if(file.size>5*1024*1024)throw new Error('BibTeX 文件需小于 5 MB。');const text=await file.text(),parsed=parseBibTeX(text);if(!parsed.length)throw new Error('未找到含题目、作者、期刊或会议、年份的完整 BibTeX 条目。');const doi=x=>String(x.doi||'').toLowerCase().replace(/^https?:\/\/doi\.org\//,'').replace(/^doi:/,'').trim(),title=x=>String(x.title||'').replace(/<[^>]*>/g,'').replace(/&amp;/gi,'&').toLowerCase().replace(/[^a-z0-9]+/g,''),match=(a,b)=>(doi(a)&&doi(a)===doi(b))||(title(a)&&title(a)===title(b)&&String(a.year)===String(b.year));let added=0,enriched=0,duplicates=0;for(const item of parsed){const existing=p.publications.find(x=>match(x,item));if(existing){let changed=false;for(const field of ['authors','journal','doi','url'])if(!String(existing[field]||'').trim()&&String(item[field]||'').trim()){existing[field]=item[field];changed=true;}if(changed)enriched++;else duplicates++;}else{p.publications.push(item);added++;}}if(!added&&!enriched)throw new Error('没有新增或补全记录；文件中的条目已存在。');dirty=true;forms();preview();say('BibTeX 导入完成：新增 '+added+' 条，补全 '+enriched+' 条，未改动重复项 '+duplicates+' 条。');}catch(e){say(fail(e),true);}finally{e.target.value='';}});
