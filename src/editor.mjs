@@ -114,7 +114,7 @@ async function load(){const s=await store.snapshot();const errors=validateProfil
 document.addEventListener('input',e=>{const el=e.target;if(el.dataset.path){if(/^research\.\d+\.title$/.test(el.dataset.path)){const old=value(el.dataset.path);for(const work of p.projects)if(work.researchArea===old)work.researchArea=el.value;}set(el.dataset.path,el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?null:Number(el.value)):el.value);modified();}if(el.id==='bio-input'){p.bio=el.value.split(/\n\s*\n/).map(x=>x.trim()).filter(Boolean);modified();}if(el.id==='raw-json'){rawDirty=dirty=true;controls();say('JSON 已修改，请先应用。');}});
 document.addEventListener('change',e=>{
  const path=e.target.dataset?.path;
- if(!path||!/[.](startDate|period|year|researchArea)$/.test(path))return;
+ if(!path||(!/[.](startDate|period|year|researchArea)$/.test(path)&&!/^research\.\d+\.title$/.test(path)))return;
  if(path.endsWith('.startDate')&&e.target.value&&parseDate(e.target.value)===null)return;
  clearTimeout(reorderTimer);
  reorderTimer=setTimeout(()=>{
