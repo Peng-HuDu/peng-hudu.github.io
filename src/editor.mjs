@@ -66,6 +66,8 @@ function controls(){
  document.querySelector('.editor-pane').inert=busy||!loaded;
  document.querySelector('.editor-pane').hidden=!loaded;
  document.querySelector('.toolbar').inert=busy||!loaded;
+ for(const el of document.querySelectorAll('.toolbar button'))el.disabled=busy||!loaded;
+ $('tools-state').textContent=loaded?'导出文件保存在本地':'连接资料库后可用';
  $('editor-empty').hidden=loaded;$('preview-empty').hidden=loaded;$('preview').hidden=!loaded;
  for(const el of document.querySelectorAll('[data-tab],#page-preview,#refresh'))el.disabled=busy||!loaded;
  $('connection-state').textContent=store.connected?'已连接':'未连接';
