@@ -158,7 +158,7 @@ export function publicationAuthorsHTML(authors=''){
 }
 export function publicationCitationHTML(pub){
   return '<strong><em>'+escapeHTML(pub.journal)+'</em></strong>'+
-    (pub.volume?' <strong>'+escapeHTML(pub.volume)+'</strong>':'')+
+    (pub.volume?' '+escapeHTML(pub.volume):'')+
     (pub.pages?', '+escapeHTML(pub.pages):'')+' ('+escapeHTML(pub.year)+').';
 }
 
