@@ -8,7 +8,7 @@ const $=id=>document.getElementById(id);
 const say=(text,error=false)=>{$('status').textContent=text;$('status').classList.toggle('error',error);};
 const cloud=(text,error=false)=>{$('cloud-status').textContent=text;$('cloud-status').classList.toggle('error',error);};
 const clone=value=>typeof structuredClone==='function'?structuredClone(value):JSON.parse(JSON.stringify(value));
-const fail=e=>{const map={401:'令牌无效或已过期，请重新连接。',403:'权限不足或访问频率受限，请检查仓库范围和 Contents 读写权限。',404:'未找到仓库或文件，请检查授权。',409:'资料版本冲突，未覆盖云端内容。请先导出资料 JSON，再载入最新版本合并修改。',422:'分支已变化或受保护。请导出资料 JSON，重新载入后核对。'};if(map[e.code])return map[e.code];if(/Network request|Failed to fetch|abort/i.test(e.message))return '网络连接未能确认，请检查网络后重新载入资料；保存结果请以仓库记录为准。';if(/fine-grained|github_pat_/i.test(e.message))return '请输入以 github_pat_ 开头的细粒度访问令牌。';if(/configured repository owner|write access/i.test(e.message))return '当前令牌没有此资料库的写入权限，请检查所属账号与仓库授权。';return '操作未完成：'+e.message;};
+const fail=e=>{const map={401:'令牌无效或已过期，请重新连接。',403:'权限不足或访问频率受限，请检查仓库范围和 Contents 读写权限。',404:'未找到仓库或文件，请检查授权。',409:'资料版本冲突，未覆盖云端内容。请先导出资料 JSON，再载入最新版本合并修改。',422:'分支已变化或受保护。请导出资料 JSON，重新载入后核对。'};if(map[e.code])return map[e.code];if(/source image cannot be decoded|decod(?:e|ing)/i.test(e.message))return '无法解码图片，请将图片另存为 JPEG、PNG 或 WebP 后重新选择。';if(/Network request|Failed to fetch|abort/i.test(e.message))return '网络连接未能确认，请检查网络后重新载入资料；保存结果请以仓库记录为准。';if(/fine-grained|github_pat_/i.test(e.message))return '请输入以 github_pat_ 开头的细粒度访问令牌。';if(/configured repository owner|write access/i.test(e.message))return '当前令牌没有此资料库的写入权限，请检查所属账号与仓库授权。';return '操作未完成：'+e.message;};
 async function read(path){const r=await fetch(path,{cache:'no-store',credentials:'same-origin'});if(!r.ok)throw new Error(path+' (HTTP '+r.status+')');return r.text();}
 try{
 const [css,configText]=await Promise.all([read('/src/site.css'),read('/config/site.json')]);
@@ -64,7 +64,7 @@ function backgroundForm(){
 }
 
 function forms(){
- $('basics').innerHTML=`<h2>基本信息</h2><p class="help">编辑个人简介、照片及经历；有日期的条目默认按开始时间由近及远。</p>${field('name','姓名')}${field('headline','研究关键词','text','使用英文逗号分隔，例如 Computational materials physics, Thermal transport；网页以点号连接。')}<label class="field"><span>个人简介（段落间空一行）</span><textarea id="bio-input" rows="7">${h(p.bio.join('\n\n'))}</textarea></label><h2>个人照片</h2>${safePortrait(p.portrait?.dataUrl)?`<img src="${safePortrait(p.portrait.dataUrl)}" alt="${h(p.portrait.alt)}" style="width:82px;height:auto;margin-bottom:12px">`:''}<label class="field"><span>选择照片（JPEG / PNG / WebP，不超过 1 MB）</span><input id="portrait-file" type="file" accept="image/jpeg,image/png,image/webp"></label>${field('portrait.alt','照片替代文字（英文）')}<button class="mini-button" id="remove-portrait">移除照片</button><div style="height:20px"></div>${backgroundForm()}${field('updated','资料更新日期','date')}${field('draft','在预览中显示草稿提示','checkbox')}${homeSectionOrder(p).map(key=>blocks(key,key==='experience'?'职业':'教育')).join('')}`;
+ $('basics').innerHTML=`${backgroundForm()}<h2>基本信息</h2><p class="help">填写姓名、研究关键词和个人简介。</p>${field('name','姓名')}${field('headline','研究关键词','text','使用英文逗号分隔，例如 Computational materials physics, Thermal transport；网页以点号连接。')}<label class="field"><span>个人简介（段落间空一行）</span><textarea id="bio-input" rows="7">${h(p.bio.join('\n\n'))}</textarea></label><h2>个人照片</h2>${safePortrait(p.portrait?.dataUrl)?`<img src="${safePortrait(p.portrait.dataUrl)}" alt="${h(p.portrait.alt)}" style="width:82px;height:auto;margin-bottom:12px">`:''}<label class="field"><span>选择照片（JPEG / PNG / WebP，不超过 1 MB）</span><input id="portrait-file" type="file" accept="image/jpeg,image/png,image/webp"></label>${field('portrait.alt','照片替代文字（英文）')}<button class="mini-button" id="remove-portrait">移除照片</button><div style="height:20px"></div>${field('updated','资料更新日期','date')}${field('draft','在预览中显示草稿提示','checkbox')}${homeSectionOrder(p).map(key=>blocks(key,key==='experience'?'职业':'教育')).join('')}`;
  $('research').innerHTML=researchForm();
  const awardIndices=orderIndices('honors').filter(i=>p.honors[i].group==='awards'),talkIndices=orderIndices('honors').filter(i=>p.honors[i].group==='talks');
  $('events').innerHTML=eventBlocks('荣誉与奖励',awardIndices,'awards')+eventBlocks('报告与海报',talkIndices,'talks');
@@ -203,10 +203,11 @@ document.addEventListener('change',async e=>{
  if(e.target.id!=='background-file')return;
  const file=e.target.files[0];if(!file||busy)return;
  busy=true;controls();say('正在处理背景图片…');
- let imageURL='';
  try{
   if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>20*1024*1024)throw Error('请选择不超过 20 MB 的 JPEG / PNG / WebP 图片。');
-  const image=new Image();imageURL=URL.createObjectURL(file);image.src=imageURL;await image.decode();
+  const dataURL=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('无法读取图片文件，请重新选择。'));reader.readAsDataURL(file);});
+  const image=new Image();image.src=dataURL;
+  try{await image.decode();}catch{throw Error('无法解码这张图片，请将图片另存为 JPEG、PNG 或 WebP 后重新上传。');}
   if(!image.naturalWidth||!image.naturalHeight)throw Error('无法读取图片尺寸。');
   const base=publicProfile(p);base.background={dataUrl:'',overlayOpacity:p.background?.overlayOpacity??0.88};
   const room=950000-new TextEncoder().encode(JSON.stringify(base,null,2)+'\\n').length-2000;
@@ -228,7 +229,7 @@ document.addEventListener('change',async e=>{
   p.background={dataUrl:data,overlayOpacity:p.background?.overlayOpacity??0.88};
   forms();modified();preview();say('背景图片已载入，可调节白色蒙版；保存后更新五个页面。');
  }catch(error){say(error.message||'背景图片处理失败。',true);}
- finally{if(imageURL)URL.revokeObjectURL(imageURL);busy=false;controls();}
+ finally{e.target.value='';busy=false;controls();}
 });
 
 preview();controls();cloud('请连接 GitHub 载入私有资料。');say('连接后，选择页面即可编辑并预览。');
