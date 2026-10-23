@@ -21,7 +21,7 @@ function existingDate(value){
  return parseDate(month>=0?y+'-'+String(month+1).padStart(2,'0'):y);
 }
 export function entryStart(entry){
- const explicit=parseDate(entry?.startDate);
+ const explicit=parseDate(entry?.date)??parseDate(entry?.startDate);
  if(explicit!==null)return explicit;
  return existingDate(entry?.period)??existingDate(entry?.year);
 }

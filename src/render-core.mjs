@@ -21,10 +21,16 @@ export function withOptionalSections(value) {
 
   p.research=(p.research||[]).map(x=>{const {label,...rest}=x;return {...rest,title:(x.title||'').trim()};});
   p.projects=(p.projects||[]).map(x=>{const {label,title,...rest}=x;return {...rest,description:[title,x.description].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('\n\n'),researchArea:(x.researchArea||'').trim(),graphicalAbstract:x.graphicalAbstract||{dataUrl:'',alt:''}};});
-  p.honors=(p.honors||[]).flatMap(x=>{const years=String(x.year||'').match(/\b\d{4}\b/g)||[];return years.length>1?years.map(year=>({...x,year})):x;}).map(x=>{const {type,...rest}=x;return {...rest,group:x.group||(/award|scholarship|honou?r|prize/i.test(type||'')||/award|scholarship|prize/i.test(x.title)?'awards':'talks')};});
-  p.affiliations=p.affiliations??[{department:p.department||'',institution:p.institution||''}];
+  p.honors=(p.honors||[]).flatMap(x=>{const years=String(x.year||'').match(/\b\d{4}\b/g)||[];return years.length>1?years.map(year=>({...x,year})):x;}).map(x=>{
+    const {type,...rest}=x;
+    const date=x.date??(/^\d{4}-\d{2}-\d{2}$/.test(x.startDate||'')?x.startDate:'');
+    const hasDate=/^\d{4}-\d{2}-\d{2}$/.test(date)&&parseDate(date)!==null;
+    const pending=x.legacyDatePending??(!date&&/^\d{4}$/.test(String(x.year||'')));
+    return {...rest,date,year:hasDate?date.slice(0,4):String(x.year||''),location:x.location??'',legacyDatePending:hasDate?false:pending,group:x.group||(/award|scholarship|honou?r|prize/i.test(type||'')||/award|scholarship|prize/i.test(x.title)?'awards':'talks')};
+  });
+  p.affiliations=(p.affiliations??[{department:p.department||'',institution:p.institution||''}]).map(x=>{const {department,institution,...rest}=x;return {...rest,name:x.name??[department,institution].filter(Boolean).join(', ')};});
   p.emails=p.emails??(p.email?[{email:p.email}]:[]);
-  const primary=sortEntries(p.affiliations)[0];if(primary){if(primary.department)p.department=primary.department;if(primary.institution)p.institution=primary.institution;}
+  const primary=sortEntries(p.affiliations)[0];if(primary?.name)p.institution=primary.name;
   if(p.emails.length)p.email=sortEntries(p.emails)[0].email||'';else p.email='';
   p.publications=(p.publications||[]).map(x=>{const {status,url,...rest}=x;return {...rest,title:plainTitle(x.title),journal:journalAbbreviation(x.journal),authors:normalizeAuthors(x.authors),doi:normalizedDOI(x.doi).toLowerCase(),volume:x.volume||'',pages:x.pages||''};});
   return p;
@@ -119,8 +125,14 @@ export function validateProfile(p, release = false) {
     if(!item||item.startDate===undefined||item.startDate==='')continue;
     if(parseDate(item.startDate)===null){errors.push(dateLabels[key]+'第'+(i+1)+'条：排序时间请填写有效的 YYYY、YYYY-MM 或 YYYY-MM-DD。');continue;}
     const year=String(item.year??'').match(/\b\d{4}\b/)?.[0];
-    if(['publications','honors'].includes(key)&&year&&item.startDate.trim().slice(0,4)!==year)errors.push(dateLabels[key]+'第'+(i+1)+'条：排序日期的年份须与条目年份一致。');
+    if(key==='publications'&&year&&item.startDate.trim().slice(0,4)!==year)errors.push(dateLabels[key]+'第'+(i+1)+'条：排序日期的年份须与条目年份一致。');
   }
+  for(const [i,event] of (p.honors||[]).entries()){
+    if(event.date&&(!/^\d{4}-\d{2}-\d{2}$/.test(event.date)||parseDate(event.date)===null))errors.push('活动 '+(i+1)+'：日期必须是有效的 YYYY-MM-DD。');
+    if(!event.date&&!event.legacyDatePending)errors.push('活动 '+(i+1)+'：请填写日期（YYYY-MM-DD）。');
+    if(typeof event.location!=='string')errors.push('活动 '+(i+1)+'：地点须为文本。');
+  }
+  for(const [i,x] of (p.affiliations||[]).entries())if(typeof x.name!=='string')errors.push('机构 '+(i+1)+'：名称须为文本。');
   for(const [i,x] of (p.projects||[]).entries())if(x.graphicalAbstract?.dataUrl&&!safePortrait(x.graphicalAbstract.dataUrl))errors.push('研究工作 '+(i+1)+'：图形摘要格式无效。');
   for(const [i,x] of (p.emails||[]).entries())if(x.email&&!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(x.email))errors.push('邮箱 '+(i+1)+'：格式无效。');
   if (release && p.draft) errors.push('Release blocked: the profile is still a draft. Review the content and set draft to false.');
@@ -170,13 +182,13 @@ export function cvBody(p) {
   const image = safePortrait(p.portrait?.dataUrl);
   return `<article class="cv-sheet">
   ${p.draft?`<div class="cv-draft">DRAFT CV &mdash; Review before sharing.${p.publications.length?'':' Individual publication records have not yet been imported.'}</div>`:''}
-  <div class="cv-heading"><div><h1>${h(p.name)}</h1><p>${h(p.role)} &middot; ${h(p.department)}<br>${h(p.institution)}</p>${p.email?`<p><a href="mailto:${h(p.email)}">${h(p.email)}</a></p>`:''}${links?`<p>${links}</p>`:''}</div>${image?`<img class="cv-portrait" src="${image}" alt="${h(p.portrait.alt)}" width="82" height="105">`:''}</div>
+  <div class="cv-heading"><div><h1>${h(p.name)}</h1><p>${h(p.role)}<br>${h(p.institution)}</p>${p.email?`<p><a href="mailto:${h(p.email)}">${h(p.email)}</a></p>`:''}${links?`<p>${links}</p>`:''}</div>${image?`<img class="cv-portrait" src="${image}" alt="${h(p.portrait.alt)}" width="82" height="105">`:''}</div>
   <h2>Research profile</h2>${p.bio.map(x=>`<p>${h(x)}</p>`).join('')}
   ${homeSectionOrder(p).map(key=>`<h2>${key==='experience'?'Career':'Education'}</h2>${records(key)}`).join('')}
   <h2>Research</h2>${p.research.map(x=>`<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.description)}</p></div>`).join('')}
   ${(p.skills||[]).length?`<h2>Research skills</h2><div class="cv-skill-list">${p.skills.map(x=>`<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.tools)}</p></div>`).join('')}</div>`:''}
   ${(p.projects||[]).length?`<h2>Representative research</h2>${p.projects.map(x=>`<div class="cv-entry"><p>${h(x.description)}</p></div>`).join('')}`:''}
-  ${(p.honors||[]).length?`<h2>Honors, awards &amp; presentations</h2>${p.honors.map(x=>`<div class="cv-entry"><p><strong>${h(x.year)}</strong> &middot; ${h(x.title)}</p></div>`).join('')}`:''}
+  ${(p.honors||[]).length?`<h2>Honors, awards &amp; presentations</h2>${p.honors.map(x=>`<div class="cv-entry"><p><strong>${h(x.date||x.year)}</strong> &middot; ${h(x.location?x.location.split(/[,，]/).map(s=>s.trim()).filter(Boolean).join(' · '):'')}${x.location?' &middot; ':''}${h(x.title)}</p></div>`).join('')}`:''}
   ${p.goals.length?`<h2>Planned research directions</h2>${p.goals.map(x=>`<div class="cv-entry"><h3>${h(x.title)}</h3><p>${h(x.description)}</p></div>`).join('')}`:''}
   <h2>Publications</h2>${p.publications.length?`<ol>${sortedPublications(p).map(x=>`<li>${publicationAuthorsHTML(x.authors)}. <strong>${h(x.title)}</strong>. ${publicationCitationHTML(x)}${!!x.status && x.status!=='published'?` [${h(x.status)}]`:''}${x.doi?` <a href="https://doi.org/${h(normalizedDOI(x.doi))}">${h(normalizedDOI(x.doi))}</a>`:''}</li>`).join('')}</ol>`:(safeURL(p.links.scholar)?`<p>Publication record and current citation metrics: <a href="${h(safeURL(p.links.scholar))}" target="_blank" rel="noopener noreferrer">Google Scholar</a>.</p>${p.draft?'<p class="cv-muted">Individual publication records have not yet been imported into this CV.</p>':''}`:'<p class="cv-muted">Individual publication records have not yet been added.</p>')}
   ${p.publicationSummary.showCount && p.publicationSummary.reportedCount!==null?`<p class="cv-muted">Reported total: ${h(p.publicationSummary.reportedCount)} papers; as of ${h(p.publicationSummary.countAsOf)}. ${h(p.publicationSummary.countSource)}</p>`:''}
