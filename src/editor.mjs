@@ -57,8 +57,14 @@ function researchForm(){
  const orphan=orderIndices('projects').filter(i=>!p.research.some(a=>a.title===p.projects[i].researchArea));
  return orderIndices('research').map(direction).join('')+'<button data-add="research">添加研究方向</button>'+(orphan.length?'<h2>未归类工作</h2>'+orphan.map((i,n)=>'<label class="field"><span>归入研究方向</span><select data-path="projects.'+i+'.researchArea"><option value="">请选择</option>'+p.research.map(a=>'<option value="'+h(a.title)+'">'+h(a.title)+'</option>').join('')+'</select></label>'+work(i,n)).join(''):'');
 }
+
+function backgroundForm(){
+ const image=safePortrait(p.background?.dataUrl),opacity=Math.round((p.background?.overlayOpacity??0.88)*100);
+ return '<h2>网站背景</h2><p class="help">统一应用到五个页面。上传后会自动压缩；未上传时使用浅色条纹。</p><label class="field"><span>上传背景图片（JPEG / PNG / WebP）</span><input id="background-file" type="file" accept="image/jpeg,image/png,image/webp"></label>'+(image?'<img class="background-thumbnail" src="'+image+'" alt="背景图片预览">':'')+'<button type="button" class="mini-button" id="remove-background" '+(!image?'disabled':'')+'>移除背景图片</button><div class="background-overlay-control"><label for="background-overlay">白色蒙版强度 <output id="background-overlay-value">'+opacity+'%</output></label><input id="background-overlay" type="range" min="0" max="100" step="1" value="'+opacity+'" '+(!image?'disabled':'')+'><p class="hint">数值越高，背景越淡；选择图片后可在右侧查看效果。</p></div>';
+}
+
 function forms(){
- $('basics').innerHTML=`<h2>基本信息</h2><p class="help">编辑个人简介、照片及经历；有日期的条目默认按开始时间由近及远。</p>${field('name','姓名')}${field('headline','研究关键词','text','使用英文逗号分隔，例如 Computational materials physics, Thermal transport；网页以点号连接。')}<label class="field"><span>个人简介（段落间空一行）</span><textarea id="bio-input" rows="7">${h(p.bio.join('\n\n'))}</textarea></label><h2>个人照片</h2>${safePortrait(p.portrait?.dataUrl)?`<img src="${safePortrait(p.portrait.dataUrl)}" alt="${h(p.portrait.alt)}" style="width:82px;height:auto;margin-bottom:12px">`:''}<label class="field"><span>选择照片（JPEG / PNG / WebP，不超过 1 MB）</span><input id="portrait-file" type="file" accept="image/jpeg,image/png,image/webp"></label>${field('portrait.alt','照片替代文字（英文）')}<button class="mini-button" id="remove-portrait">移除照片</button><div style="height:20px"></div>${field('updated','资料更新日期','date')}${field('draft','在预览中显示草稿提示','checkbox')}${homeSectionOrder(p).map(key=>blocks(key,key==='experience'?'职业':'教育')).join('')}`;
+ $('basics').innerHTML=`<h2>基本信息</h2><p class="help">编辑个人简介、照片及经历；有日期的条目默认按开始时间由近及远。</p>${field('name','姓名')}${field('headline','研究关键词','text','使用英文逗号分隔，例如 Computational materials physics, Thermal transport；网页以点号连接。')}<label class="field"><span>个人简介（段落间空一行）</span><textarea id="bio-input" rows="7">${h(p.bio.join('\n\n'))}</textarea></label><h2>个人照片</h2>${safePortrait(p.portrait?.dataUrl)?`<img src="${safePortrait(p.portrait.dataUrl)}" alt="${h(p.portrait.alt)}" style="width:82px;height:auto;margin-bottom:12px">`:''}<label class="field"><span>选择照片（JPEG / PNG / WebP，不超过 1 MB）</span><input id="portrait-file" type="file" accept="image/jpeg,image/png,image/webp"></label>${field('portrait.alt','照片替代文字（英文）')}<button class="mini-button" id="remove-portrait">移除照片</button><div style="height:20px"></div>${backgroundForm()}${field('updated','资料更新日期','date')}${field('draft','在预览中显示草稿提示','checkbox')}${homeSectionOrder(p).map(key=>blocks(key,key==='experience'?'职业':'教育')).join('')}`;
  $('research').innerHTML=researchForm();
  const awardIndices=orderIndices('honors').filter(i=>p.honors[i].group==='awards'),talkIndices=orderIndices('honors').filter(i=>p.honors[i].group==='talks');
  $('events').innerHTML=eventBlocks('荣誉与奖励',awardIndices,'awards')+eventBlocks('报告与海报',talkIndices,'talks');
@@ -179,6 +185,50 @@ document.addEventListener('change',e=>{
  text.value=picker.value;
  text.dispatchEvent(new Event('input',{bubbles:true}));
  text.dispatchEvent(new Event('change',{bubbles:true}));
+});
+
+
+document.addEventListener('input',e=>{
+ if(e.target.id!=='background-overlay')return;
+ p.background.overlayOpacity=Number(e.target.value)/100;
+ $('background-overlay-value').textContent=e.target.value+'%';
+ modified();clearTimeout(timer);timer=setTimeout(preview,120);
+});
+document.addEventListener('click',e=>{
+ if(!e.target.closest('#remove-background'))return;
+ p.background={dataUrl:'',overlayOpacity:p.background?.overlayOpacity??0.88};
+ forms();modified();preview();
+});
+document.addEventListener('change',async e=>{
+ if(e.target.id!=='background-file')return;
+ const file=e.target.files[0];if(!file||busy)return;
+ busy=true;controls();say('正在处理背景图片…');
+ let imageURL='';
+ try{
+  if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>20*1024*1024)throw Error('请选择不超过 20 MB 的 JPEG / PNG / WebP 图片。');
+  const image=new Image();imageURL=URL.createObjectURL(file);image.src=imageURL;await image.decode();
+  if(!image.naturalWidth||!image.naturalHeight)throw Error('无法读取图片尺寸。');
+  const base=publicProfile(p);base.background={dataUrl:'',overlayOpacity:p.background?.overlayOpacity??0.88};
+  const room=950000-new TextEncoder().encode(JSON.stringify(base,null,2)+'\\n').length-2000;
+  if(room<50000)throw Error('资料库剩余图片空间不足，请先缩小个人照片或图形摘要。');
+  const budget=Math.min(330000,room),canvas=document.createElement('canvas');
+  let data='';
+  for(const maximum of [1800,1440,1100,800]){
+   const scale=Math.min(1,maximum/Math.max(image.naturalWidth,image.naturalHeight));
+   canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+   const context=canvas.getContext('2d');if(!context)throw Error('浏览器无法处理图片。');
+   context.fillStyle='#ffffff';context.fillRect(0,0,canvas.width,canvas.height);context.drawImage(image,0,0,canvas.width,canvas.height);
+   for(const quality of [0.85,0.72,0.6,0.48,0.35]){
+    const candidate=canvas.toDataURL('image/jpeg',quality);
+    if(candidate.length<=budget){data=candidate;break;}
+   }
+   if(data)break;
+  }
+  if(!data||!safePortrait(data))throw Error('图片压缩后仍然过大，请选择较简单或较小的图片。');
+  p.background={dataUrl:data,overlayOpacity:p.background?.overlayOpacity??0.88};
+  forms();modified();preview();say('背景图片已载入，可调节白色蒙版；保存后更新五个页面。');
+ }catch(error){say(error.message||'背景图片处理失败。',true);}
+ finally{if(imageURL)URL.revokeObjectURL(imageURL);busy=false;controls();}
 });
 
 preview();controls();cloud('请连接 GitHub 载入私有资料。');say('连接后，选择页面即可编辑并预览。');

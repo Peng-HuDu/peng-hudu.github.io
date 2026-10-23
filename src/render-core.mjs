@@ -18,6 +18,8 @@ export function withOptionalSections(value) {
   p.contactLinks = p.contactLinks.map(x => ({...x, label:x.label ?? '', url:x.url ?? ''}));
   if (p.portrait === undefined) p.portrait = {dataUrl:'', alt:'', source:''};
   if (p.contactNote === undefined) p.contactNote = '';
+  if(p.background===undefined)p.background={dataUrl:'',overlayOpacity:0.88};
+  else if(p.background&&typeof p.background==='object')p.background={...p.background,dataUrl:p.background.dataUrl??'',overlayOpacity:p.background.overlayOpacity??0.88};
 
   p.research=(p.research||[]).map(x=>{const {label,...rest}=x;return {...rest,title:(x.title||'').trim()};});
   p.projects=(p.projects||[]).map(x=>{const {label,title,...rest}=x;return {...rest,description:[title,x.description].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join('\n\n'),researchArea:(x.researchArea||'').trim(),graphicalAbstract:x.graphicalAbstract||{dataUrl:'',alt:''}};});
@@ -135,6 +137,7 @@ export function validateProfile(p, release = false) {
   for(const [i,x] of (p.affiliations||[]).entries())if(typeof x.name!=='string')errors.push('机构 '+(i+1)+'：名称须为文本。');
   for(const [i,x] of (p.projects||[]).entries())if(x.graphicalAbstract?.dataUrl&&!safePortrait(x.graphicalAbstract.dataUrl))errors.push('研究工作 '+(i+1)+'：图形摘要格式无效。');
   for(const [i,x] of (p.emails||[]).entries())if(x.email&&!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(x.email))errors.push('邮箱 '+(i+1)+'：格式无效。');
+  if(!p.background||typeof p.background!=='object'||typeof p.background.dataUrl!=='string'||(p.background.dataUrl&&!safePortrait(p.background.dataUrl))||typeof p.background.overlayOpacity!=='number'||!Number.isFinite(p.background.overlayOpacity)||p.background.overlayOpacity<0||p.background.overlayOpacity>1)errors.push('网站背景：图片须为 JPEG / PNG / WebP，蒙版强度须在 0–100% 之间。');
   if (release && p.draft) errors.push('Release blocked: the profile is still a draft. Review the content and set draft to false.');
   return errors;
 }
@@ -199,7 +202,7 @@ export function renderCV(p, css) {
 }
 /** Remove private/source-only metadata before committing public data. */
 export function publicProfile(input) {
-  const allowed = ['schemaVersion','draft','updated','name','role','department','institution','institutionShort','headline','tagline','bio','email','links','research','goals','experience','education','publicationSummary','publications','presentation','projects','skills','honors','contactLinks','affiliations','emails','portrait','revision'];
+  const allowed = ['schemaVersion','draft','updated','name','role','department','institution','institutionShort','headline','tagline','bio','email','links','research','goals','experience','education','publicationSummary','publications','presentation','projects','skills','honors','contactLinks','affiliations','emails','portrait','background','revision'];
   const p = Object.fromEntries(allowed.filter(k => input[k] !== undefined).map(k => [k, structuredClone(input[k])]));
   if (p.portrait) p.portrait = {dataUrl:p.portrait.dataUrl, alt:p.portrait.alt};
   if (p.publicationSummary && !p.publicationSummary.showCount) {
