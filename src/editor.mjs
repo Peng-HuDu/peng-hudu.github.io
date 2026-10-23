@@ -18,10 +18,15 @@ const value=path=>path.split('.').reduce((x,k)=>x?.[k],p);
 function set(path,v){const keys=path.split('.');let o=p;for(const k of keys.slice(0,-1))o=o[k];o[keys.at(-1)]=v;}
 function field(path,label,kind='text',hint=''){
  const v=value(path)??'',id='field-'+path.replaceAll('.','-');
+
+ if(kind==='date'){
+  return '<div class="field iso-date-field"><label class="iso-date-label" for="'+id+'">'+h(label)+'</label><span class="iso-date-wrap"><input id="'+id+'" data-path="'+path+'" data-iso-date="true" type="text" value="'+h(v)+'" placeholder="YYYY-MM-DD" maxlength="10" pattern="[0-9]{4}-[0-9]{2}-[0-9]{2}" autocomplete="off" required><span class="calendar-slot"><button type="button" class="calendar-button" data-open-calendar="'+id+'-calendar" aria-label="从日历选择日期"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 11h18"/></svg></button><input class="calendar-native" id="'+id+'-calendar" type="date" data-calendar-path="'+path+'" value="'+h(v)+'" tabindex="-1" aria-hidden="true"></span></span>'+(hint?'<div class="hint">'+h(hint)+'</div>':'')+'</div>';
+ }
+
  const control=kind==='textarea'?`<textarea id="${id}" data-path="${path}">${h(v)}</textarea>`:kind==='checkbox'?`<input id="${id}" data-path="${path}" type="checkbox" ${v?'checked':''}>`:`<input id="${id}" data-path="${path}" type="${kind}" value="${h(v)}" ${(path.endsWith('.doi')||path.endsWith('.date'))?'required':path.endsWith('.startDate')?'maxlength="10" placeholder="例如 2025-07"':''}>`;
  return `<label class="field" for="${id}"><span>${h(label)}</span>${control}${hint?`<div class="hint">${h(hint)}</div>`:''}</label>`;
 }
-const defs={research:[['title','研究方向'],['description','概述','textarea']],projects:[['title','项目名称'],['label','分类标签'],['researchArea','所属研究方向（标题需一致）'],['description','项目介绍','textarea']],goals:[['title','计划名称'],['description','研究计划','textarea']],skills:[['title','方法类别'],['tools','工具或模型（英文逗号分隔）','textarea']],experience:[['period','起止时间'],['title','职位'],['institution','所在机构'],['detail','详细说明','textarea']],education:[['period','就读时间'],['title','学位'],['institution','学校'],['detail','详细说明','textarea']],honors:[['year','年份'],['title','名称','textarea']],affiliations:[['name','名称']],emails:[['email','地址','email']],contactLinks:[['label','名称'],['url','链接','url']]};
+const defs={research:[['title','研究方向'],['description','概述','textarea']],projects:[['title','项目名称'],['label','分类标签'],['researchArea','所属研究方向（标题需一致）'],['description','项目介绍','textarea']],goals:[['title','计划名称'],['description','研究计划','textarea']],skills:[['title','方法类别'],['tools','工具或模型（英文逗号分隔）','textarea']],experience:[['period','起止时间'],['title','职位'],['institution','机构'],['detail','详细说明','textarea']],education:[['period','就读时间'],['title','学位'],['institution','学校'],['detail','详细说明','textarea']],honors:[['year','年份'],['title','名称','textarea']],affiliations:[['name','名称']],emails:[['email','地址','email']],contactLinks:[['label','名称'],['url','链接','url']]};
 const defaults={research:{title:'',description:''},projects:{researchArea:'',description:'',graphicalAbstract:{dataUrl:'',alt:''}},goals:{title:'',description:''},skills:{title:'',tools:''},experience:{period:'',title:'',institution:'',detail:''},education:{period:'',title:'',institution:'',detail:''},honors:{date:'',location:'',title:'',group:'awards',legacyDatePending:false},affiliations:{name:''},emails:{email:''},contactLinks:{label:'',url:''},publications:{title:'',authors:'',journal:'',year:new Date().getFullYear(),volume:'',pages:'',doi:'',selected:false}};
 function orderIndices(key){return sortedEntryIndices(p[key]||[]);}
 function sortDateField(key,i){
@@ -58,7 +63,7 @@ function forms(){
  const awardIndices=orderIndices('honors').filter(i=>p.honors[i].group==='awards'),talkIndices=orderIndices('honors').filter(i=>p.honors[i].group==='talks');
  $('events').innerHTML=eventBlocks('荣誉与奖励',awardIndices,'awards')+eventBlocks('报告与海报',talkIndices,'talks');
  $('contact').innerHTML=blocks('affiliations','机构')+blocks('emails','邮箱')+blocks('contactLinks','合作');
- $('publications').innerHTML=`<h2>学术主页链接</h2><p class="help">这些链接显示在公开 Publications 页面的论文列表上方。</p>${profileDefinitions().map(([k,l])=>field('links.'+k,(k==='institution'?'学校官方个人页':l)+' 链接','url')).join('')}<h2>论文条目</h2><div class="bib-actions"><button type="button" class="mini-button" id="import-bib">导入 BibTeX</button><input id="bib-file" type="file" accept=".bib,.txt,application/x-bibtex" hidden><button type="button" class="mini-button" id="export-bib-panel">导出 BibTeX</button></div><div class="note">支持导入 .bib 论文题录。作者姓名用英文逗号分隔，期刊填写标准缩写。</div>${orderIndices('publications').map((i,n)=>`<div class="block"><h3>论文 ${n+1}</h3>${field(`publications.${i}.title`,'题目','textarea')}${field(`publications.${i}.authors`,'作者','textarea')}${field(`publications.${i}.journal`,'期刊（标准缩写）')}${field(`publications.${i}.year`,'年','number')}${field(`publications.${i}.volume`,'卷')}${field(`publications.${i}.pages`,'页 / 文章编号')}${field(`publications.${i}.doi`,'DOI（必填）')}${field(`publications.${i}.selected`,'标记为代表作','checkbox')}${sortDateField('publications',i)}<button class="remove" data-remove="publications" data-index="${i}">删除此条目</button></div>`).join('')}<button class="add-button" data-add="publications">添加论文</button>`;
+ $('publications').innerHTML=`<h2>学术主页链接</h2><p class="help">这些链接显示在公开 Publications 页面的论文列表上方。</p>${profileDefinitions().map(([k,l])=>field('links.'+k,(k==='institution'?'学校官方个人页':l)+' 链接','url')).join('')}<h2>论文条目</h2><div class="bib-actions"><button type="button" class="mini-button" id="import-bib">导入 BibTeX</button><input id="bib-file" type="file" accept=".bib,.txt,application/x-bibtex" hidden><button type="button" class="mini-button" id="export-bib-panel">导出 BibTeX</button></div><div class="note">支持导入 .bib 论文题录。作者姓名用英文逗号分隔，期刊填写标准缩写。</div>${orderIndices('publications').map((i,n)=>`<div class="block"><h3>论文 ${n+1}</h3>${field(`publications.${i}.title`,'标题','textarea')}${field(`publications.${i}.authors`,'作者','textarea')}${field(`publications.${i}.journal`,'期刊（标准缩写）')}${field(`publications.${i}.year`,'年','number')}${field(`publications.${i}.volume`,'卷')}${field(`publications.${i}.pages`,'页 / 文章编号')}${field(`publications.${i}.doi`,'DOI（必填）')}${field(`publications.${i}.selected`,'标记为代表作','checkbox')}${sortDateField('publications',i)}<button class="remove" data-remove="publications" data-index="${i}">删除此条目</button></div>`).join('')}<button class="add-button" data-add="publications">添加论文</button>`;
  $('raw-json').value=JSON.stringify(p,null,2);
  controls();
 }
@@ -154,6 +159,27 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeTokenTip(true);
 window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.returnValue='';}});window.addEventListener('pagehide',()=>{stopPublicationCheck();store.disconnect();$('cloud-token').value='';controls();});
 
 document.addEventListener('change',async e=>{if(e.target.dataset.abstract===undefined)return;const file=e.target.files[0];if(!file)return;try{if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>1024*1024)throw Error('图形摘要须为 JPEG / PNG / WebP，且不超过 1 MB。');const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=reject;reader.readAsDataURL(file);});if(!safePortrait(data))throw Error('图片格式无效。');p.projects[Number(e.target.dataset.abstract)].graphicalAbstract={dataUrl:data,alt:'Graphical abstract'};forms();modified();}catch(error){say(error.message,true);}});
+
+
+document.addEventListener('click',e=>{
+ const button=e.target.closest('[data-open-calendar]');if(!button)return;
+ const picker=$(button.dataset.openCalendar);if(!picker)return;
+ const text=document.querySelector('[data-path="'+picker.dataset.calendarPath+'"]');
+ picker.value=/^\d{4}-\d{2}-\d{2}$/.test(text.value)&&parseDate(text.value)!==null?text.value:'';
+ try{if(typeof picker.showPicker==='function')picker.showPicker();else picker.click();}catch{picker.click();}
+});
+document.addEventListener('input',e=>{
+ const text=e.target;if(text.dataset.isoDate!=='true')return;
+ const picker=$(text.id+'-calendar');
+ if(picker)picker.value=/^\d{4}-\d{2}-\d{2}$/.test(text.value)&&parseDate(text.value)!==null?text.value:'';
+});
+document.addEventListener('change',e=>{
+ const picker=e.target;if(!picker.dataset.calendarPath)return;
+ const text=document.querySelector('[data-path="'+picker.dataset.calendarPath+'"]');if(!text)return;
+ text.value=picker.value;
+ text.dispatchEvent(new Event('input',{bubbles:true}));
+ text.dispatchEvent(new Event('change',{bubbles:true}));
+});
 
 preview();controls();cloud('请连接 GitHub 载入私有资料。');say('连接后，选择页面即可编辑并预览。');
 }catch(e){const message=e instanceof Error?e.message:String(e);say('编辑器启动失败：'+message,true);cloud('编辑器启动失败：'+message,true);}
